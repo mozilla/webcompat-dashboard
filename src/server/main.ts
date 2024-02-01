@@ -127,8 +127,9 @@ app.post("/api/track_action.json", ensureAuth, async (req, res) => {
   return await handleTrackAction(req, res);
 });
 
-const server = app.listen(3000, () => {
-  console.log("Listening to 0.0.0.0:3000");
+const listenPort = (process.env.LISTEN_PORT && parseInt(process.env.LISTEN_PORT)) || 3000;
+const server = app.listen(listenPort, () => {
+  console.log(`Listening to 0.0.0.0:${listenPort}`);
 });
 
 ViteExpress.bind(app, server);
