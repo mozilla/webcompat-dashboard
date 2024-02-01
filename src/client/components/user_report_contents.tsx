@@ -55,6 +55,10 @@ export default function UserReportContents({ index, report }: UserReportContents
               <td>{report.labels.sort().join(", ")}</td>
             </tr>
           )}
+          <tr>
+            <td>Reported at</td>
+            <td>{report.reported_at.toString()}</td>
+          </tr>
           {report.comments && (
             <tr>
               <td>Comments</td>
