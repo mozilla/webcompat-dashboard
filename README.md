@@ -10,7 +10,7 @@
 ## Development environment
 
 1. Make sure a current NodeJS is installed
-2. Copu `.env.example` into `.env` and adjust as required
+2. Copy `.env.example` into `.env` and adjust as required
 3. `npm install`
 4. `npm run dev`
 
