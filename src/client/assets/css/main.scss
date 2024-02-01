@@ -1,0 +1,45 @@
+@import "./header.scss";
+@import "./loading_sinner.scss";
+@import "./result_list.scss";
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+#root {
+  margin: 0 2rem;
+}
+
+a {
+  border-bottom: 1px solid transparent;
+  color: blue;
+  text-decoration: none;
+
+  &:focus,
+  &:hover,
+  &.active {
+    border-bottom: 1px solid blue;
+  }
+}
+
+section {
+  margin: 1rem 0;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+
+  label {
+    margin-right: 0.5rem;
+  }
+}
+
+.error-box {
+  background-color: rgb(255, 150, 150);
+  border: 1px solid red;
+  padding: 0 1rem;
+}

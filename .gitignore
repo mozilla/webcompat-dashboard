@@ -1,0 +1,14 @@
+.env
+dist/
+node_modules/
+
+# Now, why is this ignored, you may ask? To reduce the amount of weirdly changed
+# lines in any significant patch that nobody will ever review.
+# But isn't this going to break things? I hope not!
+# In `package.json`, all dependencies are locked to an exact version, as
+# opposed to the default ^-notation, which only locks the major versoin, but
+# allows minor- and patch-level updates. So even if the lockfile isn't in this
+# repo, we'll always get the exact same patch-level version. Which... should
+# be fine.
+# If it ever breaks, you're welcome to blame :denschub.
+package-lock.json
