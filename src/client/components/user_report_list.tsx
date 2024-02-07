@@ -32,9 +32,11 @@ export default function UserReportList({ results }: ResultListProps) {
                   <>
                     <h3>Unknown Reports</h3>
                     <table className="report-list">
-                      {entry.unknown_reports.map((report, index) => (
-                        <UserReportContents key={report.uuid} index={index + 1} report={report} />
-                      ))}
+                      <tbody>
+                        {entry.unknown_reports.map((report, index) => (
+                          <UserReportContents key={report.uuid} index={index + 1} report={report} />
+                        ))}
+                      </tbody>
                     </table>
                   </>
                 )}
@@ -42,9 +44,11 @@ export default function UserReportList({ results }: ResultListProps) {
                   <>
                     <h3>(Maybe) Known Reports</h3>
                     <table className="report-list">
-                      {entry.known_reports.map((report, index) => (
-                        <UserReportContents key={report.uuid} index={index + 1} report={report} />
-                      ))}
+                      <tbody>
+                        {entry.known_reports.map((report, index) => (
+                          <UserReportContents key={report.uuid} index={index + 1} report={report} />
+                        ))}
+                      </tbody>
                     </table>
                   </>
                 )}

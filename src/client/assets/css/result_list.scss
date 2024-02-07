@@ -61,6 +61,10 @@
       border-bottom: 1px solid #999;
     }
 
+    tr.report.invalid {
+      opacity: 0.5;
+    }
+
     .contents {
       td {
         padding-bottom: 0.5rem;
