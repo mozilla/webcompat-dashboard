@@ -20,19 +20,30 @@ export default async function handleUserReports(req: Request, res: Response) {
     const [[rawReports], [rawUrlPatterns]] = await Promise.all([
       bq.query({
         query: `
-          SELECT *,
+          SELECT reports.*,
             ARRAY(
               SELECT label
               FROM webcompat_user_reports.labels
-              WHERE report_uuid = user_reports_prod.uuid
-            ) as labels
-          FROM webcompat_user_reports.user_reports_prod
+              WHERE report_uuid = reports.uuid
+            ) as labels,
+            bp.label as prediction,
+            bp.probability as prob
+          FROM webcompat_user_reports.user_reports_prod as reports
+          LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.uuid = bp.report_uuid
           WHERE
-            reported_at BETWEEN ? and DATE_ADD(?, interval 1 day)
+            reports.reported_at BETWEEN ? and DATE_ADD(?, interval 1 day)
 
             # Exclude reports that have a tracked action, i.e. reports hidden
             # or reports that have been investigated
-            AND NOT EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = user_reports_prod.uuid)
+            AND NOT EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.uuid)
+            ORDER BY 
+            CASE
+              WHEN prediction = 'valid' THEN 1
+              WHEN prediction = 'invalid' THEN 2
+              ELSE 3
+            END,
+              CASE WHEN prediction = 'valid' THEN prob END DESC,
+              CASE WHEN prediction = 'invalid' THEN prob END ASC;
         `,
         params: [searchParams.get("from")!, searchParams.get("to")!],
       }),

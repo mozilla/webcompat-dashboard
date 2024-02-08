@@ -7,6 +7,8 @@ export type UserReport = {
   details: Record<string, any>;
   related_bugs: RelatedBug[];
   labels: string[];
+  prediction: string;
+  prob: number;
 };
 
 export type RelatedBug = {
