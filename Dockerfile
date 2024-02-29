@@ -10,6 +10,13 @@ WORKDIR /app
 
 COPY . .
 
+# These variables need to be set at build-time as they're embedded into
+# The frontend build.
+ARG VITE_BACKEND_WEB_ROOT
+ARG VITE_FRONTEND_WEB_ROOT
+ENV VITE_BACKEND_WEB_ROOT=${VITE_BACKEND_WEB_ROOT}
+ENV VITE_FRONTEND_WEB_ROOT=${VITE_FRONTEND_WEB_ROOT}
+
 RUN npm install && \
  npm run build
 
