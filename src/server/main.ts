@@ -104,7 +104,7 @@ function ensureAuth(req: Request, res: Response, next: NextFunction) {
  */
 const ALLOWED_CORS_ORIGINS = [process.env.FRONTEND_WEB_ROOT, ...process.env.ADDITIONAL_CORS_ORIGINS!.split(",")];
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) {
+  if (req.path.startsWith("/api") || ["/app/version.json", "/__version__"].includes(req.path)) {
     res.setHeader("Content-Type", "application/json");
 
     if (req.header("origin")) {
@@ -125,6 +125,22 @@ app.get("/api/user_reports.json", ensureAuth, async (req, res) => {
 
 app.post("/api/track_action.json", ensureAuth, async (req, res) => {
   return await handleTrackAction(req, res);
+});
+
+app.get(["/app/version.json", "/__version__"], (_req, res) => {
+  // See https://github.com/mozilla-services/Dockerflow/blob/main/docs/version_object.md
+  res.end(
+    JSON.stringify({
+      source: "https://github.com/webcompat/wckbng-dashboard",
+      version: "ToDo",
+      commit: "ToDo",
+      build: "ToDo",
+    }),
+  );
+});
+
+app.get(["/__heartbeat__", "/__lbheartbeat__"], (_req, res) => {
+  return res.end("success");
 });
 
 const listenPort = (process.env.LISTEN_PORT && parseInt(process.env.LISTEN_PORT)) || 3000;
