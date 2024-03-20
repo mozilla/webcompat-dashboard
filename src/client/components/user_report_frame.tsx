@@ -21,11 +21,11 @@ export default function UserReportFrame({ from, to }: UserReportFrameProps) {
       );
 
       if (res.status == 401) {
-        window.location.href = `${import.meta.env.VITE_BACKEND_WEB_ROOT}/auth/github`;
+        window.location.href = `${import.meta.env.VITE_BACKEND_WEB_ROOT}/login`;
       }
 
       if (res.status == 403) {
-        window.location.href = `${import.meta.env.VITE_BACKEND_WEB_ROOT}/auth/forbidden`;
+        window.location.href = `${import.meta.env.VITE_BACKEND_WEB_ROOT}/forbidden`;
       }
 
       return await res.json();

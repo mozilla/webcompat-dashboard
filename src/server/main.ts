@@ -28,20 +28,24 @@ if (process.env.SKIP_AUTH !== "true") {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        callbackURL: `${process.env.BACKEND_WEB_ROOT}/auth/github/callback`,
-      },
-      (_accessToken: any, _refreshToken: any, profile: any, done: any) => {
-        process.nextTick(function () {
-          return done(null, profile);
-        });
-      },
-    ),
-  );
+  if (process.env.AUTH_DOMAIN == "github.com") {
+    passport.use(
+      new GitHubStrategy(
+        {
+          clientID: process.env.AUTH_CLIENT_ID!,
+          clientSecret: process.env.AUTH_CLIENT_SECRET!,
+          callbackURL: `${process.env.BACKEND_WEB_ROOT}/callback`,
+        },
+        (_accessToken: any, _refreshToken: any, profile: any, done: any) => {
+          process.nextTick(function () {
+            return done(null, profile);
+          });
+        },
+      ),
+    );
+  } else {
+    throw "NYI: Other providers"
+  }
 }
 
 /**
@@ -62,8 +66,8 @@ passport.deserializeUser((obj: any, done) => {
  * the response we get from GitHub. Ultimately, after login, this just redirects
  * back into the fronend, because the backend doesn't actualy have any UI.
  */
-app.get("/auth/github", passport.authenticate("github"), () => {});
-app.get("/auth/github/callback", passport.authenticate("github", { failureRedirect: "/auth/github" }), (_req, res) => {
+app.get("/login", passport.authenticate("github"), () => {});
+app.get("/callback", passport.authenticate("github", { failureRedirect: "/login" }), (_req, res) => {
   res.redirect(process.env.FRONTEND_WEB_ROOT!);
 });
 
@@ -78,10 +82,11 @@ function ensureAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  // If authentication is enabled, make sure the authenticated GitHub user is
-  // part of the allowlist.
+  // If authentication is enabled, make sure the authenticated user is
+  // part of the allowlist. This is particularly important for general
+  // auth providers like GitHub.
   if (req.user) {
-    if (process.env.GITHUB_ALLOWED_USERS!.split(",").includes(req.user as string)) {
+    if (process.env.AUTH_ALLOWED_USERS!.split(",").includes(req.user as string)) {
       return next();
     } else {
       return endWithStatusAndBody(res, 403, "user not allowed");
