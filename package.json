@@ -19,6 +19,7 @@
     "express-session": "1.18.0",
     "inter-ui": "4.0.1",
     "passport": "0.7.0",
+    "passport-auth0": "1.4.4",
     "passport-github2": "0.1.12",
     "psl": "1.9.0",
     "react": "18.2.0",

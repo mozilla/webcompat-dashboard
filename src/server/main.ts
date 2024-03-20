@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import { Strategy as Auth0Strategy } from "passport-auth0";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import bodyParser from "body-parser";
 import express, { Request, Response, NextFunction } from "express";
@@ -14,6 +15,11 @@ import handleTrackAction from "./routes/track_action";
 
 const app = express();
 app.use(bodyParser.json());
+
+let auth_config = {
+  provider: "",
+  params: {},
+};
 
 if (process.env.SKIP_AUTH !== "true") {
   app.use(
@@ -29,6 +35,7 @@ if (process.env.SKIP_AUTH !== "true") {
   app.use(passport.session());
 
   if (process.env.AUTH_DOMAIN == "github.com") {
+    auth_config.provider = "github";
     passport.use(
       new GitHubStrategy(
         {
@@ -37,6 +44,24 @@ if (process.env.SKIP_AUTH !== "true") {
           callbackURL: `${process.env.BACKEND_WEB_ROOT}/callback`,
         },
         (_accessToken: any, _refreshToken: any, profile: any, done: any) => {
+          process.nextTick(function () {
+            return done(null, profile);
+          });
+        },
+      ),
+    );
+  } else if (process.env.AUTH_DOMAIN?.endsWith(".auth0.com")) {
+    auth_config.provider = "auth0";
+    auth_config.params = { scope: 'openid email' };
+    passport.use(
+      new Auth0Strategy(
+        {
+          domain: process.env.AUTH_DOMAIN!,
+          clientID: process.env.AUTH_CLIENT_ID!,
+          clientSecret: process.env.AUTH_CLIENT_SECRET!,
+          callbackURL: `${process.env.BACKEND_WEB_ROOT}/callback`,
+        },
+        (_accessToken: any, _refreshToken: any, _extra: any, profile: any, done: any) => {
           process.nextTick(function () {
             return done(null, profile);
           });
@@ -55,7 +80,12 @@ if (process.env.SKIP_AUTH !== "true") {
  * good enough.
  */
 passport.serializeUser((user: any, done) => {
-  done(null, user.username);
+  if (auth_config.provider == "github") {
+    done(null, user.username);
+  } else if (auth_config.provider == "auth0") {
+    let email = user.emails[0].value;
+    done(null, email);
+  }
 });
 passport.deserializeUser((obj: any, done) => {
   done(null, obj);
@@ -63,13 +93,14 @@ passport.deserializeUser((obj: any, done) => {
 
 /**
  * Simple handlers for starting the login flow from the frontend, and handling
- * the response we get from GitHub. Ultimately, after login, this just redirects
+ * the response we get from GitHub/Auth0. Ultimately, after login, this just redirects
  * back into the fronend, because the backend doesn't actualy have any UI.
  */
-app.get("/login", passport.authenticate("github"), () => {});
-app.get("/callback", passport.authenticate("github", { failureRedirect: "/login" }), (_req, res) => {
-  res.redirect(process.env.FRONTEND_WEB_ROOT!);
-});
+app.get("/login", passport.authenticate(auth_config.provider, auth_config.params), () => { });
+app.get("/callback", passport.authenticate(
+  auth_config.provider,
+  { ...auth_config.params, failureRedirect: "/login" }),
+  (_req, res) => { res.redirect(process.env.FRONTEND_WEB_ROOT!); });
 
 /**
  * Simple middleware to check if the authenticated user is one contained in the
