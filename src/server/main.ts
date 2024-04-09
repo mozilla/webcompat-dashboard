@@ -148,4 +148,8 @@ const server = app.listen(listenPort, () => {
   console.log(`Listening to 0.0.0.0:${listenPort}`);
 });
 
-ViteExpress.bind(app, server);
+if (process.env.NODE_ENV == "production") {
+  app.use(express.static("dist/"));
+} else {
+  ViteExpress.bind(app, server);
+}
