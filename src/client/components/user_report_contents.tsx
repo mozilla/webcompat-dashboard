@@ -82,7 +82,7 @@ export default function UserReportContents({ index, report }: UserReportContents
             )}
             <tr>
               <td>User Agent</td>
-              <td>{report.details.browser_info.app.default_useragent_string}</td>
+              <td>{report.ua_string}</td>
             </tr>
             {report.related_bugs?.length > 0 && (
               <tr>
@@ -97,17 +97,6 @@ export default function UserReportContents({ index, report }: UserReportContents
                       </li>
                     ))}
                   </ul>
-                </td>
-              </tr>
-            )}
-            {report.details && (
-              <tr>
-                <td>Full Details</td>
-                <td>
-                  <details>
-                    <summary>Show full details as JSON</summary>
-                    <pre>{JSON.stringify(report.details, null, 2)}</pre>
-                  </details>
                 </td>
               </tr>
             )}
