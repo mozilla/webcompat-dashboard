@@ -4,7 +4,7 @@ export type UserReport = {
   url: string;
   breakage_category?: string;
   comments: string;
-  details: Record<string, any>;
+  ua_string: string;
   related_bugs: RelatedBug[];
   labels: string[];
   prediction: string;
