@@ -1,9 +1,10 @@
+import { Worker } from "node:worker_threads";
+import * as path from "node:path";
 import { Request, Response } from "express";
 import type { Logger } from "winston";
 
 import { endWithStatusAndBody, getParsedUrl } from "../helpers/http";
 import { getBqConnection } from "../helpers/bigquery";
-import { transformUserReports } from "../helpers/user_reports_transform";
 
 export default async function handleUserReports(logger: Logger, req: Request, res: Response) {
   const childLogger = logger.child({ handler: "handleUserReports" });
@@ -71,7 +72,23 @@ export default async function handleUserReports(logger: Logger, req: Request, re
     ]);
     childLogger.verbose(`Received ${rawReports.length} user reports and ${rawUrlPatterns.length} URL patterns.`);
 
-    const results = transformUserReports(rawReports, rawUrlPatterns, childLogger);
+    const worker = new Worker(path.join(__dirname, "..", "helpers", "user_reports_transform.ts"), {
+      workerData: {
+        rawReports,
+        rawUrlPatterns,
+      },
+    });
+
+    const results = await new Promise((resolve) => {
+      worker.on("message", (msg) => {
+        if (msg.type == "done") {
+          resolve(msg.result);
+        } else if (msg.type == "verbose") {
+          childLogger.verbose(msg.msg);
+        }
+      });
+    });
+
     res.write(results);
     childLogger.verbose("Handler done.");
   } catch (error: any) {
