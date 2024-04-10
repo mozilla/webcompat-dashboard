@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Strategy as GitHubStrategy } from "passport-github2";
+import * as path from "path";
 import bodyParser from "body-parser";
 import express, { Request, Response, NextFunction } from "express";
 import passport from "passport";
@@ -148,8 +149,21 @@ const server = app.listen(listenPort, () => {
   console.log(`Listening to 0.0.0.0:${listenPort}`);
 });
 
+/**
+ * In production, we don't want to use ViteExpress, as that uses a lot of memory.
+ * Instead, we build the frontend assets statically, and serve them as static
+ * files.
+ * However, since we do frontend routing, we have to make sure the routes we're
+ * using there actually work and return the index.html file so that react-router
+ * can take over from there...
+ */
 if (process.env.NODE_ENV == "production") {
-  app.use(express.static("dist/"));
+  const staticAssetRoot = path.join(__dirname, "../../dist/");
+  app.use(express.static(staticAssetRoot));
+
+  app.get(["/", "/domain_rank", "/inconsistent_entries", "/user_reports"], (_req, res) => {
+    res.sendFile(path.join(staticAssetRoot, "index.html"));
+  });
 } else {
   ViteExpress.bind(app, server);
 }
