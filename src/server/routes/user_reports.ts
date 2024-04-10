@@ -1,19 +1,25 @@
 import _ from "underscore";
 import { Request, Response } from "express";
 import psl from "psl";
+import type { Logger } from "winston";
 
 import { endWithStatusAndBody, getParsedUrl } from "../helpers/http";
 import { getBqConnection } from "../helpers/bigquery";
 import { UrlPattern, UserReport } from "../../shared/types";
 
-export default async function handleUserReports(req: Request, res: Response) {
+export default async function handleUserReports(logger: Logger, req: Request, res: Response) {
+  const childLogger = logger.child({ handler: "handleUserReports" });
+  childLogger.verbose("Entered handler");
+
   const searchParams = getParsedUrl(req).searchParams;
   if (!(searchParams.has("from") && searchParams.has("to"))) {
     return endWithStatusAndBody(res, 400, "`from` and `to` query parameters required");
   }
 
+  childLogger.verbose("Connecting to BigQuery...");
   const bq = getBqConnection();
   try {
+    childLogger.verbose("Starting queries...");
     // Note: this looks weird - but it makes sure the queries run in parallel.
     // Since BQ has some initial latency when responding, this matters.
     // [ToDo] Investigate whether using QueryJobs makes sense here.
@@ -65,7 +71,9 @@ export default async function handleUserReports(req: Request, res: Response) {
         ].join(" "),
       }),
     ]);
+    childLogger.verbose(`Received ${rawReports.length} user reports and ${rawUrlPatterns.length} URL patterns.`);
 
+    childLogger.verbose("Pre-processing URL patterns...");
     const preprocessedUrlPatterns = rawUrlPatterns.map((pattern: UrlPattern) => {
       const newPattern = Object.assign({}, pattern);
 
@@ -76,6 +84,7 @@ export default async function handleUserReports(req: Request, res: Response) {
       return newPattern;
     });
 
+    childLogger.verbose("Pre-processing user reports...");
     const preprocessedReports = rawReports
       .filter((report: UserReport) => {
         // [ToDo] some reports currently don't have a URL attached. This breaks
@@ -101,6 +110,7 @@ export default async function handleUserReports(req: Request, res: Response) {
         return newReport;
       });
 
+    childLogger.verbose("Grouping reports by root domain...");
     const groupedByDomain = _.groupBy(preprocessedReports, (report) => {
       try {
         const parsedUrl = new URL(report.url);
@@ -111,6 +121,7 @@ export default async function handleUserReports(req: Request, res: Response) {
       }
     });
 
+    childLogger.verbose("Partitioning reports into known/unknown...");
     const partitioned = Object.entries(groupedByDomain).map(([key, value]) => {
       const [known_reports, unknown_reports] = _.partition(value, (report) => report.related_bugs.length > 0);
       return {
@@ -120,9 +131,14 @@ export default async function handleUserReports(req: Request, res: Response) {
       };
     });
 
+    childLogger.verbose("Sorting by the total number of reports per domain...");
     const sorted = partitioned.sort((a, b) => b.unknown_reports.length - a.unknown_reports.length);
+
+    childLogger.verbose("Writing response...");
     res.write(JSON.stringify(sorted));
+    childLogger.verbose("Handler done.");
   } catch (error: any) {
+    childLogger.error("Handler failed", { error });
     return endWithStatusAndBody(res, 500, error.toString());
   }
 

@@ -3,8 +3,10 @@ dotenv.config();
 
 import { Strategy as GitHubStrategy } from "passport-github2";
 import * as path from "path";
+import * as winston from "winston";
 import bodyParser from "body-parser";
 import express, { Request, Response, NextFunction } from "express";
+import morgan from "morgan";
 import passport from "passport";
 import session from "express-session";
 import ViteExpress from "vite-express";
@@ -15,6 +17,45 @@ import handleTrackAction from "./routes/track_action";
 
 const app = express();
 app.use(bodyParser.json());
+
+/**
+ * Setting up the logging, using Winston for formatting the JSONL output, and
+ * Morgan to log all requests.
+ *
+ * The format we're going for in Morgan is to match the JSON-log the nginx
+ * container creates. Having unified JSON fileds between those two makes
+ * filtering a lot easier.
+ *
+ * We have to create a JSON string as the log format, and then parse the JSON
+ * again when logging it into the JSONL-log. This isn't pretty, but Morgan
+ * can only work with strings in my tests...
+ */
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL ?? "verbose",
+  transports: [new winston.transports.Console()],
+  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+});
+app.use(
+  morgan(
+    (tokens, req, res) => {
+      const t = (name: string) => tokens[name](req, res);
+      return JSON.stringify({
+        referrer: t("referrer"),
+        remote_addr: t("remote-addr"),
+        remote_user: t("remote-user"),
+        request_time: t("response-time"),
+        request: `${t("method")} ${t("url")} HTTP/${t("http-version")}`,
+        status: t("status"),
+        user_agent: t("user-agent"),
+      });
+    },
+    {
+      stream: {
+        write: (message) => logger.info("", Object.assign({ log_type: "access" }, JSON.parse(message))),
+      },
+    },
+  ),
+);
 
 if (process.env.SKIP_AUTH !== "true") {
   app.use(
@@ -43,6 +84,8 @@ if (process.env.SKIP_AUTH !== "true") {
       },
     ),
   );
+} else {
+  logger.warn("Skipping setting up authentication! This means the app will accept any request!");
 }
 
 /**
@@ -121,7 +164,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/user_reports.json", ensureAuth, async (req, res) => {
-  return await handleUserReports(req, res);
+  return await handleUserReports(logger, req, res);
 });
 
 app.post("/api/track_action.json", ensureAuth, async (req, res) => {
@@ -146,7 +189,7 @@ app.get(["/__heartbeat__", "/__lbheartbeat__"], (_req, res) => {
 
 const listenPort = (process.env.LISTEN_PORT && parseInt(process.env.LISTEN_PORT)) || 3000;
 const server = app.listen(listenPort, () => {
-  console.log(`Listening to 0.0.0.0:${listenPort}`);
+  logger.info(`Listening to 0.0.0.0:${listenPort}`);
 });
 
 /**
