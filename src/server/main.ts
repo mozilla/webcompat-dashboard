@@ -51,7 +51,7 @@ app.use(
     },
     {
       stream: {
-        write: (message) => logger.info("", Object.assign({ log_type: "access" }, JSON.parse(message))),
+        write: (message) => logger.info(undefined!, Object.assign({ log_type: "access" }, JSON.parse(message))),
       },
     },
   ),
