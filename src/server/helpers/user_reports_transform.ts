@@ -1,3 +1,4 @@
+import { parentPort, workerData } from "node:worker_threads";
 import _ from "underscore";
 import psl from "psl";
 import { UrlPattern, UserReport } from "../../shared/types";
@@ -67,4 +68,18 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 
   logger.verbose("Writing response...");
   return JSON.stringify(sorted);
+}
+
+// If this module is used in a worker, automatically call the transform
+// code using the `workerData` as arguments and post back the result.
+if (parentPort) {
+  const logger = {
+    verbose(msg: string) {
+      parentPort?.postMessage({ type: "verbose", msg });
+    },
+  };
+
+  const { rawReports, rawUrlPatterns } = workerData;
+  const result = transformUserReports(rawReports, rawUrlPatterns, logger);
+  parentPort?.postMessage({ type: "done", result });
 }

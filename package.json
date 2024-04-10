@@ -4,11 +4,11 @@
   "main": "main.js",
   "scripts": {
     "build": "vite build",
-    "dev": "nodemon -w src/server -x tsx src/server/main.ts",
+    "dev": "nodemon -w src/server -x tsx --loader ts-node/esm src/server/main.ts",
     "lint:eslint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:prettier": "prettier --write .",
     "lint": "npm-run-all lint:*",
-    "start": "NODE_ENV=production tsx src/server/main.ts"
+    "start": "NODE_ENV=production tsx --loader ts-node/esm src/server/main.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "7.5.2",
