@@ -5,9 +5,9 @@ import { getBqConnection } from "../helpers/bigquery";
 import { UrlPattern, UserReport } from "../../shared/types";
 import type { Logger } from "winston";
 
-export async function fetchUserReports(paramFrom: string, paramTo: string, logger: Logger) {
+export async function fetchUserReports(projectId: string, paramFrom: string, paramTo: string, logger: Logger) {
   logger.verbose("Connecting to BigQuery...");
-  const bq = getBqConnection();
+  const bq = getBqConnection(projectId);
 
   logger.verbose("Starting queries...");
   // Note: this looks weird - but it makes sure the queries run in parallel.
@@ -108,7 +108,7 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
     });
 
   logger.verbose("Grouping reports by root domain...");
-  let normalizeHostname = _.memoize((hostname: string) => {
+  const normalizeHostname = _.memoize((hostname: string) => {
     const parsedDomain = psl.parse(hostname);
     return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
   });
@@ -152,8 +152,8 @@ if (parentPort) {
 
   // Use an async context to do processing, posting the result back
   // to parent whenever it is done.
-  (async function ({ paramFrom, paramTo }) {
-    const { rawReports, rawUrlPatterns } = await fetchUserReports(paramFrom, paramTo, logger);
+  (async function ({ projectId, paramFrom, paramTo }) {
+    const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
     const result = transformUserReports(rawReports, rawUrlPatterns, logger);
     parentPort?.postMessage({ type: "done", result });
   })(workerData);

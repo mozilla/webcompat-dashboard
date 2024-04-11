@@ -2,6 +2,7 @@ import { Worker } from "node:worker_threads";
 import * as path from "node:path";
 import { Request, Response } from "express";
 import type { Logger } from "winston";
+import { getDefaultProject } from "../helpers/bigquery";
 
 import { endWithStatusAndBody, getParsedUrl } from "../helpers/http";
 
@@ -17,6 +18,7 @@ export default async function handleUserReports(logger: Logger, req: Request, re
   try {
     const worker = new Worker(path.join(__dirname, "..", "helpers", "user_reports_transform.ts"), {
       workerData: {
+        projectId: getDefaultProject(),
         paramFrom: searchParams.get("from")!,
         paramTo: searchParams.get("to")!,
       },
