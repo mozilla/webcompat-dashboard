@@ -141,16 +141,14 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 // If this module is used in a worker, set up a listener for the 'fetch' message
 // which will fetch and transform bigquery data before posting back to parent.
 if (parentPort) {
-  // Logging posts messages back to main-thread to avoid multithreading
-  // issues of sharing stdout.
-  const logger = {
-    verbose(msg: string) {
-      parentPort?.postMessage({ type: "verbose", msg });
-    },
-  };
-
   parentPort.on("message", async ({ type, projectId, paramFrom, paramTo, port }) => {
     if (type == "fetch") {
+      const logger = {
+        verbose(msg: string) {
+          port.postMessage({ type: "verbose", msg });
+        },
+      };
+
       const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
       const result = transformUserReports(rawReports, rawUrlPatterns, logger);
       port.postMessage({ type: "done", result });
