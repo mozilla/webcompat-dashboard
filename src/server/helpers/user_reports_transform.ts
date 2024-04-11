@@ -1,4 +1,4 @@
-import { parentPort, workerData } from "node:worker_threads";
+import { parentPort } from "node:worker_threads";
 import _ from "underscore";
 import psl from "psl";
 import { getBqConnection } from "../helpers/bigquery";
@@ -138,9 +138,8 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
   return JSON.stringify(sorted);
 }
 
-// If this module is used in a worker, automatically fetch data from
-// BigQuery and transform the result. Using `workerData` for parameters
-// and posting result back to parent.
+// If this module is used in a worker, set up a listener for the 'fetch' message
+// which will fetch and transform bigquery data before posting back to parent.
 if (parentPort) {
   // Logging posts messages back to main-thread to avoid multithreading
   // issues of sharing stdout.
@@ -150,11 +149,11 @@ if (parentPort) {
     },
   };
 
-  // Use an async context to do processing, posting the result back
-  // to parent whenever it is done.
-  (async function ({ projectId, paramFrom, paramTo }) {
-    const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
-    const result = transformUserReports(rawReports, rawUrlPatterns, logger);
-    parentPort?.postMessage({ type: "done", result });
-  })(workerData);
+  parentPort.on("message", async ({ type, projectId, paramFrom, paramTo, port }) => {
+    if (type == "fetch") {
+      const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
+      const result = transformUserReports(rawReports, rawUrlPatterns, logger);
+      port.postMessage({ type: "done", result });
+    }
+  });
 }
