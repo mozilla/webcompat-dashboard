@@ -1,7 +1,9 @@
 import { BigQuery } from "@google-cloud/bigquery";
 
-export function getBqConnection() {
-  return new BigQuery({
-    projectId: process.env.BQ_PROJECT_ID,
-  });
+export function getDefaultProject() {
+  return process.env.BQ_PROJECT_ID;
+}
+
+export function getBqConnection(projectId = getDefaultProject()) {
+  return new BigQuery({ projectId });
 }
