@@ -43,11 +43,14 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
     });
 
   logger.verbose("Grouping reports by root domain...");
+  let normalizeHostname = _.memoize((hostname: string) => {
+    const parsedDomain = psl.parse(hostname);
+    return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
+  });
   const groupedByDomain = _.groupBy(preprocessedReports, (report) => {
     try {
       const parsedUrl = new URL(report.url);
-      const parsedDomain = psl.parse(parsedUrl.hostname);
-      return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
+      return normalizeHostname(parsedUrl.hostname);
     } catch {
       return "[unknown]";
     }
