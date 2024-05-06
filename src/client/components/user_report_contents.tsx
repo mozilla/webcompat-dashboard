@@ -127,6 +127,29 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                     <button
                       onClick={() => {
                         const searchParams = new URLSearchParams([
+                          ["bug_file_loc_type", "allwordssubstr"],
+                          ["bug_file_loc", rootDomain],
+                          ["component", "Site Reports"],
+                          ["product", "Web Compatibility"],
+                          ["query_format", "advanced"],
+                          ["resolution", "---"],
+                        ]);
+
+                        const url = new URL("https://bugzilla.mozilla.org/buglist.cgi");
+                        url.search = searchParams.toString();
+                        window.open(url.toString(), "_blank");
+                      }}
+                    >
+                      List open bugs for domain
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td className="actions">
+                    <button
+                      onClick={() => {
+                        const searchParams = new URLSearchParams([
                           ["bug_file_loc", report.url],
                           ["comment", "CHANGE_ME"],
                           ["component", "Site Reports"],
