@@ -36,7 +36,7 @@ app.use(
   morgan(
     (tokens, req, res) => {
       const t = (name: string) => tokens[name](req, res);
-      return JSON.stringify({
+      const logData: any = {
         referrer: t("referrer"),
         remote_addr: t("remote-addr"),
         remote_user: t("remote-user"),
@@ -44,7 +44,13 @@ app.use(
         request: `${t("method")} ${t("url")} HTTP/${t("http-version")}`,
         status: t("status"),
         user_agent: t("user-agent"),
-      });
+      };
+
+      if (process.env.LOG_LEVEL == "debug") {
+        logData.headers = req.headers;
+      }
+
+      return JSON.stringify(logData);
     },
     {
       stream: {
