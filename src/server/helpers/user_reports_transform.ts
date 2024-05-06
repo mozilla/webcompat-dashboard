@@ -42,14 +42,13 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           # Exclude reports that have a tracked action, i.e. reports hidden
           # or reports that have been investigated
           AND NOT EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
-          ORDER BY
-          CASE
-            WHEN prediction = 'valid' THEN 1
-            WHEN prediction = 'invalid' THEN 2
-            ELSE 3
-          END,
-            CASE WHEN prediction = 'valid' THEN prob END DESC,
-            CASE WHEN prediction = 'invalid' THEN prob END ASC;
+
+          # Only include reports that are most likely valid, as determined by our ML model
+          AND bp.label = 'valid'
+
+          # Only include reports that have a comment. All other reports are unlikely to be actionable for our QA folks
+          AND reports.metrics.text2.broken_site_report_description IS NOT NULL
+        ;
       `,
       params: [paramFrom, paramTo],
     }),
