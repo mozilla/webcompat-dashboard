@@ -9,8 +9,9 @@ import morgan from "morgan";
 import ViteExpress from "vite-express";
 
 import { endWithStatusAndBody } from "./helpers/http";
-import handleUserReports from "./routes/user_reports";
+import handleMarkInvalid from "./routes/mark_invalid";
 import handleTrackAction from "./routes/track_action";
+import handleUserReports from "./routes/user_reports";
 
 const app = express();
 app.use(bodyParser.json());
@@ -122,6 +123,10 @@ app.get("/api/user_reports.json", async (req, res) => {
 
 app.post("/api/track_action.json", ensureWritePermissions, async (req, res) => {
   return await handleTrackAction(req, res);
+});
+
+app.post("/api/mark_invalid.json", ensureWritePermissions, async (req, res) => {
+  return await handleMarkInvalid(req, res);
 });
 
 app.get(["/app/version.json", "/__version__"], (_req, res) => {

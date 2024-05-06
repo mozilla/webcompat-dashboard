@@ -14,27 +14,42 @@ export default function UserReportContents({ index, report }: UserReportContents
   const isInvalid = report.prediction && report.prediction == "invalid" && report.prob > 0.92;
   const itemClassName = isInvalid ? "invalid" : "";
 
+  const jsonPostMutation = async (endpoint: string, additionalBodyFields?: any) => {
+    const payload = Object.assign(
+      {},
+      {
+        report_uuid: report.uuid,
+      },
+      additionalBodyFields,
+    );
+
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_WEB_ROOT}${endpoint}`, {
+      credentials: "include",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status == 201) {
+      setIsHidden(true);
+    }
+
+    return await res.json();
+  };
+
   const trackReportActionMutation = useMutation({
     mutationFn: async (actionType: string) => {
-      const payload = {
-        report_uuid: report.uuid,
+      return await jsonPostMutation("/api/track_action.json", {
         type: actionType,
-      };
-
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_WEB_ROOT}/api/track_action.json`, {
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
       });
+    },
+  });
 
-      if (res.status == 201) {
-        setIsHidden(true);
-      }
-
-      return await res.json();
+  const markInvalidMutation = useMutation({
+    mutationFn: async () => {
+      return await jsonPostMutation("/api/mark_invalid.json");
     },
   });
 
@@ -103,14 +118,22 @@ export default function UserReportContents({ index, report }: UserReportContents
             <tr>
               <td></td>
               <td className="actions">
-                {trackReportActionMutation.isPending ? (
+                {markInvalidMutation.isPending || trackReportActionMutation.isPending ? (
                   <LoadingSpinner />
                 ) : (
                   <>
+                    {markInvalidMutation.isError && <p>An error occurred: {markInvalidMutation.error.message}</p>}
                     {trackReportActionMutation.isError && (
                       <p>An error occurred: {trackReportActionMutation.error.message}</p>
                     )}
 
+                    <button
+                      onClick={() => {
+                        markInvalidMutation.mutate();
+                      }}
+                    >
+                      Mark as invalid
+                    </button>
                     <button
                       onClick={() => {
                         trackReportActionMutation.mutate("hide");
