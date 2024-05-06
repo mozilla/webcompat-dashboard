@@ -40,7 +40,7 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
           # removing already-actioned reports has to happen after sorting and grouping.
           CASE WHEN EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
-            THEN 1 ELSE 0 END AS has_actions
+            THEN true ELSE false END AS has_actions
         FROM moz-fx-data-shared-prod.firefox_desktop.broken_site_report as reports
         LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.document_id = bp.report_uuid
         WHERE
@@ -131,10 +131,14 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 
   logger.verbose("Transforming grouped Dictionary into Object");
   const groupedByDomain = Object.entries(groupedByDomainDict).map(([root_domain, reports]) => {
+    // First, slice the first 10 reports out, then remove all reprots that have
+    // been actioned upon. We do it in this order to make sure that there there
+    // won't be a new set of 10 issues after all of them have been worked on.
+    const reportSubset = reports.slice(0, 10).filter((report) => !report.has_actions);
     return {
       root_domain,
       reports_count: reports.length,
-      reports: reports.slice(0, 10),
+      reports: reportSubset,
     };
   });
 

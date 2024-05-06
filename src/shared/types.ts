@@ -9,6 +9,7 @@ export type UserReport = {
   labels: string[];
   prediction: string;
   prob: number;
+  has_actions: boolean;
 };
 
 export type RelatedBug = {

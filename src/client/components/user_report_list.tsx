@@ -15,13 +15,26 @@ export default function UserReportList({ results }: ResultListProps) {
       {results.map((entry) => {
         const isExpanded = expandedRootDomain == entry.root_domain;
 
+        if (entry.reports.length < 1) {
+          return;
+        }
+
         return (
           <div className="item" key={entry.root_domain}>
             <div className="header" onClick={() => setExpandedRootDomain(isExpanded ? null : entry.root_domain)}>
               <span className="toggler">{isExpanded ? "▼" : "▶"}</span>
               <span className="domain">{entry.root_domain}</span>
               <span>
-                ({entry.reports.length} {Pluralize(entry.reports.length, "report", "reports")})
+                {entry.reports_count == entry.reports.length ? (
+                  <>
+                    ({entry.reports_count} {Pluralize(entry.reports.length, "report", "reports")})
+                  </>
+                ) : (
+                  <>
+                    ({entry.reports_count} {Pluralize(entry.reports.length, "report", "reports")},{" "}
+                    {entry.reports.length} shown)
+                  </>
+                )}
               </span>
             </div>
             {isExpanded && (
