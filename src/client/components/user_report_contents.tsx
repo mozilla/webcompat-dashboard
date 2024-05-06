@@ -35,9 +35,11 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
 
     if (res.status == 201) {
       setIsHidden(true);
+      return await res.json();
+    } else {
+      const body = await res.text();
+      throw new Error(`Unexpected status code: ${res.status}, body: "${body}"`);
     }
-
-    return await res.json();
   };
 
   const trackReportActionMutation = useMutation({
