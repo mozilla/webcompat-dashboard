@@ -6,9 +6,10 @@ import LoadingSpinner from "./loading_spinner";
 type UserReportContentsProps = {
   index: number;
   report: UserReport;
+  rootDomain: string;
 };
 
-export default function UserReportContents({ index, report }: UserReportContentsProps) {
+export default function UserReportContents({ index, report, rootDomain }: UserReportContentsProps) {
   const [isHidden, setIsHidden] = useState(false);
   const itemStyle: React.CSSProperties = isHidden ? { display: "none" } : {};
   const isInvalid = report.prediction && report.prediction == "invalid" && report.prob > 0.92;
@@ -115,13 +116,44 @@ export default function UserReportContents({ index, report }: UserReportContents
                 </td>
               </tr>
             )}
-            <tr>
-              <td></td>
-              <td className="actions">
-                {markInvalidMutation.isPending || trackReportActionMutation.isPending ? (
-                  <LoadingSpinner />
-                ) : (
-                  <>
+
+            {markInvalidMutation.isPending || trackReportActionMutation.isPending ? (
+              <LoadingSpinner />
+            ) : (
+              <>
+                <tr>
+                  <td></td>
+                  <td className="actions">
+                    <button
+                      onClick={() => {
+                        const searchParams = new URLSearchParams([
+                          ["bug_file_loc", report.url],
+                          ["comment", "CHANGE_ME"],
+                          ["component", "Site Reports"],
+                          ["product", "Web Compatibility"],
+                          ["short_desc", `${rootDomain} - CHANGE_ME`],
+                          ["status_whiteboard", "[webcompat-source:product]"],
+                        ]);
+
+                        const url = new URL("https://bugzilla.mozilla.org/enter_bug.cgi");
+                        url.search = searchParams.toString();
+                        window.open(url.toString(), "_blank");
+                      }}
+                    >
+                      Prepare new Bugzilla bug
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("filed");
+                      }}
+                    >
+                      Mark as "filed on Bugzilla"
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td className="actions">
                     {markInvalidMutation.isError && <p>An error occurred: {markInvalidMutation.error.message}</p>}
                     {trackReportActionMutation.isError && (
                       <p>An error occurred: {trackReportActionMutation.error.message}</p>
@@ -141,17 +173,10 @@ export default function UserReportContents({ index, report }: UserReportContents
                     >
                       Hide report
                     </button>
-                    <button
-                      onClick={() => {
-                        trackReportActionMutation.mutate("investigated");
-                      }}
-                    >
-                      Mark as actively investigated
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
       </td>

@@ -29,7 +29,12 @@ export default function UserReportList({ results }: ResultListProps) {
                 <table className="report-list">
                   <tbody>
                     {entry.reports.map((report, index) => (
-                      <UserReportContents key={report.uuid} index={index + 1} report={report} />
+                      <UserReportContents
+                        key={report.uuid}
+                        index={index + 1}
+                        rootDomain={entry.root_domain}
+                        report={report}
+                      />
                     ))}
                   </tbody>
                 </table>
