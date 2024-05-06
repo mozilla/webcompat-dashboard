@@ -112,7 +112,7 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
     const parsedDomain = psl.parse(hostname);
     return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
   });
-  const groupedByDomain = _.groupBy(preprocessedReports, (report) => {
+  const groupedByDomainDict = _.groupBy(preprocessedReports, (report) => {
     try {
       const parsedUrl = new URL(report.url);
       return normalizeHostname(parsedUrl.hostname);
@@ -121,18 +121,16 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
     }
   });
 
-  logger.verbose("Partitioning reports into known/unknown...");
-  const partitioned = Object.entries(groupedByDomain).map(([key, value]) => {
-    const [known_reports, unknown_reports] = _.partition(value, (report) => report.related_bugs.length > 0);
+  logger.verbose("Transforming grouped Dictionary into Object");
+  const groupedByDomain = Object.entries(groupedByDomainDict).map(([root_domain, reports]) => {
     return {
-      root_domain: key,
-      known_reports,
-      unknown_reports,
+      root_domain,
+      reports,
     };
   });
 
   logger.verbose("Sorting by the total number of reports per domain...");
-  const sorted = partitioned.sort((a, b) => b.unknown_reports.length - a.unknown_reports.length);
+  const sorted = groupedByDomain.sort((a, b) => b.reports.length - a.reports.length);
 
   logger.verbose("Writing response...");
   return JSON.stringify(sorted);
