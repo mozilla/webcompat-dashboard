@@ -149,8 +149,8 @@ if (parentPort) {
         },
       };
 
-      const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
-      const result = transformUserReports(rawReports, rawUrlPatterns, logger);
+      const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger as Logger);
+      const result = transformUserReports(rawReports, rawUrlPatterns, logger as Logger);
       port.postMessage({ type: "done", result });
     }
   });
