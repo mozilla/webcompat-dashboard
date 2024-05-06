@@ -164,7 +164,21 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                         markInvalidMutation.mutate();
                       }}
                     >
-                      Mark as invalid
+                      Mark as invalid/spam
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("worksforme");
+                      }}
+                    >
+                      Mark as "worksforme"
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("duplicate");
+                      }}
+                    >
+                      Mark as "duplicate"
                     </button>
                     <button
                       onClick={() => {
