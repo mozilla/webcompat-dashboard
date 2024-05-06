@@ -1,8 +1,9 @@
-import { parentPort } from "node:worker_threads";
 import _ from "underscore";
-import psl from "psl";
 import { getBqConnection } from "../helpers/bigquery";
+import { isIP } from "node:net";
+import { parentPort } from "node:worker_threads";
 import { UrlPattern, UserReport } from "../../shared/types";
+import psl from "psl";
 import type { Logger } from "winston";
 
 export async function fetchUserReports(projectId: string, paramFrom: string, paramTo: string, logger: Logger) {
@@ -110,6 +111,10 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 
   logger.verbose("Grouping reports by root domain...");
   const normalizeHostname = _.memoize((hostname: string) => {
+    if (isIP(hostname)) {
+      return hostname;
+    }
+
     const parsedDomain = psl.parse(hostname);
     return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
   });
