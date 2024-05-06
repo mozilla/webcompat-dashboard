@@ -1,14 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { Strategy as GitHubStrategy } from "passport-github2";
 import * as path from "path";
 import * as winston from "winston";
 import bodyParser from "body-parser";
 import express, { Request, Response, NextFunction } from "express";
 import morgan from "morgan";
-import passport from "passport";
-import session from "express-session";
 import ViteExpress from "vite-express";
 
 import { endWithStatusAndBody } from "./helpers/http";
@@ -57,82 +54,32 @@ app.use(
   ),
 );
 
-if (process.env.SKIP_AUTH !== "true") {
-  app.use(
-    session({
-      proxy: true,
-      secret: process.env.SESSION_SECRET!,
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: true, sameSite: "none", httpOnly: true, maxAge: 60 * 60 * 24 * 30 },
-    }),
-  );
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID!,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        callbackURL: `${process.env.BACKEND_WEB_ROOT}/auth/github/callback`,
-      },
-      (_accessToken: any, _refreshToken: any, profile: any, done: any) => {
-        process.nextTick(function () {
-          return done(null, profile);
-        });
-      },
-    ),
-  );
-} else {
-  logger.warn("Skipping setting up authentication! This means the app will accept any request!");
-}
-
-/**
- * Usually, you'd do a bit more logic here, like storing user data in a database
- * or something. However, this is really only here to allow validating the
- * authenticated username against an allowlist, so only having the username is
- * good enough.
- */
-passport.serializeUser((user: any, done) => {
-  done(null, user.username);
-});
-passport.deserializeUser((obj: any, done) => {
-  done(null, obj);
-});
-
-/**
- * Simple handlers for starting the login flow from the frontend, and handling
- * the response we get from GitHub. Ultimately, after login, this just redirects
- * back into the fronend, because the backend doesn't actualy have any UI.
- */
-app.get("/auth/github", passport.authenticate("github"), () => {});
-app.get("/auth/github/callback", passport.authenticate("github", { failureRedirect: "/auth/github" }), (_req, res) => {
-  res.redirect(process.env.FRONTEND_WEB_ROOT!);
-});
-
 /**
  * Simple middleware to check if the authenticated user is one contained in the
  * allowlist. If not, it just returns a 401 response, and the frontend needs
  * to take care of more.
  */
-function ensureAuth(req: Request, res: Response, next: NextFunction) {
+function ensureWritePermissions(req: Request, res: Response, next: NextFunction) {
   // For local development, it's easier if we don't have to deal with auth.
   if (process.env.SKIP_AUTH == "true") {
     return next();
   }
 
-  // If authentication is enabled, make sure the authenticated GitHub user is
-  // part of the allowlist.
-  if (req.user) {
-    if (process.env.GITHUB_ALLOWED_USERS!.split(",").includes(req.user as string)) {
-      return next();
-    } else {
-      return endWithStatusAndBody(res, 403, "user not allowed");
-    }
+  const claimEmail = req.headers["oidc-claim-user-profile-email"] as string;
+  if (!claimEmail) {
+    return endWithStatusAndBody(res, 401, "unauthorized");
   }
 
-  return endWithStatusAndBody(res, 401, "unauthorized");
+  if (!process.env.MOZLDAP_STATE_ACCESS) {
+    logger.error("MOZLDAP_STATE_ACCESS was not set, all authenticated requests will fail!");
+    return endWithStatusAndBody(res, 403, "user not allowed");
+  }
+
+  if (process.env.MOZLDAP_STATE_ACCESS.split(",").includes(claimEmail)) {
+    return next();
+  }
+
+  return endWithStatusAndBody(res, 403, "user not allowed");
 }
 
 /**
@@ -163,11 +110,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/api/user_reports.json", ensureAuth, async (req, res) => {
+app.get("/api/user_reports.json", async (req, res) => {
   return await handleUserReports(logger, req, res);
 });
 
-app.post("/api/track_action.json", ensureAuth, async (req, res) => {
+app.post("/api/track_action.json", ensureWritePermissions, async (req, res) => {
   return await handleTrackAction(req, res);
 });
 
