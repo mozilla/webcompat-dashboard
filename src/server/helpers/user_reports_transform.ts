@@ -34,15 +34,17 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
             WHERE report_uuid = reports.document_id
           ) as labels,
           bp.label as prediction,
-          bp.probability as prob
+          bp.probability as prob,
+
+          # We want to exclude reports that have been actioned upon, but we do this later during processing. That's
+          # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
+          # removing already-actioned reports has to happen after sorting and grouping.
+          CASE WHEN EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
+            THEN 1 ELSE 0 END AS has_actions
         FROM moz-fx-data-shared-prod.firefox_desktop.broken_site_report as reports
         LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.document_id = bp.report_uuid
         WHERE
           reports.submission_timestamp BETWEEN TIMESTAMP(?) and TIMESTAMP(DATE_ADD(?, interval 1 day))
-
-          # Exclude reports that have a tracked action, i.e. reports hidden
-          # or reports that have been investigated
-          AND NOT EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
 
           # Only include reports that are most likely valid, as determined by our ML model
           AND bp.label = 'valid'
@@ -131,12 +133,13 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
   const groupedByDomain = Object.entries(groupedByDomainDict).map(([root_domain, reports]) => {
     return {
       root_domain,
-      reports,
+      reports_count: reports.length,
+      reports: reports.slice(0, 10),
     };
   });
 
   logger.verbose("Sorting by the total number of reports per domain...");
-  const sorted = groupedByDomain.sort((a, b) => b.reports.length - a.reports.length);
+  const sorted = groupedByDomain.sort((a, b) => b.reports_count - a.reports_count);
 
   logger.verbose("Writing response...");
   return JSON.stringify(sorted);
