@@ -6,35 +6,51 @@ import LoadingSpinner from "./loading_spinner";
 type UserReportContentsProps = {
   index: number;
   report: UserReport;
+  rootDomain: string;
 };
 
-export default function UserReportContents({ index, report }: UserReportContentsProps) {
+export default function UserReportContents({ index, report, rootDomain }: UserReportContentsProps) {
   const [isHidden, setIsHidden] = useState(false);
   const itemStyle: React.CSSProperties = isHidden ? { display: "none" } : {};
   const isInvalid = report.prediction && report.prediction == "invalid" && report.prob > 0.92;
   const itemClassName = isInvalid ? "invalid" : "";
 
+  const jsonPostMutation = async (endpoint: string, additionalBodyFields?: any) => {
+    const payload = Object.assign(
+      {},
+      {
+        report_uuid: report.uuid,
+      },
+      additionalBodyFields,
+    );
+
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_WEB_ROOT}${endpoint}`, {
+      credentials: "include",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status == 201) {
+      setIsHidden(true);
+    }
+
+    return await res.json();
+  };
+
   const trackReportActionMutation = useMutation({
     mutationFn: async (actionType: string) => {
-      const payload = {
-        report_uuid: report.uuid,
+      return await jsonPostMutation("/api/track_action.json", {
         type: actionType,
-      };
-
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_WEB_ROOT}/api/track_action.json`, {
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
       });
+    },
+  });
 
-      if (res.status == 201) {
-        setIsHidden(true);
-      }
-
-      return await res.json();
+  const markInvalidMutation = useMutation({
+    mutationFn: async () => {
+      return await jsonPostMutation("/api/mark_invalid.json");
     },
   });
 
@@ -100,17 +116,93 @@ export default function UserReportContents({ index, report }: UserReportContents
                 </td>
               </tr>
             )}
-            <tr>
-              <td></td>
-              <td className="actions">
-                {trackReportActionMutation.isPending ? (
-                  <LoadingSpinner />
-                ) : (
-                  <>
+
+            {markInvalidMutation.isPending || trackReportActionMutation.isPending ? (
+              <LoadingSpinner />
+            ) : (
+              <>
+                <tr>
+                  <td></td>
+                  <td className="actions">
+                    <button
+                      onClick={() => {
+                        const searchParams = new URLSearchParams([
+                          ["bug_file_loc_type", "allwordssubstr"],
+                          ["bug_file_loc", rootDomain],
+                          ["component", "Site Reports"],
+                          ["product", "Web Compatibility"],
+                          ["query_format", "advanced"],
+                          ["resolution", "---"],
+                        ]);
+
+                        const url = new URL("https://bugzilla.mozilla.org/buglist.cgi");
+                        url.search = searchParams.toString();
+                        window.open(url.toString(), "_blank");
+                      }}
+                    >
+                      List open bugs for domain
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td className="actions">
+                    <button
+                      onClick={() => {
+                        const searchParams = new URLSearchParams([
+                          ["bug_file_loc", report.url],
+                          ["comment", "CHANGE_ME"],
+                          ["component", "Site Reports"],
+                          ["product", "Web Compatibility"],
+                          ["short_desc", `${rootDomain} - CHANGE_ME`],
+                          ["status_whiteboard", "[webcompat-source:product]"],
+                        ]);
+
+                        const url = new URL("https://bugzilla.mozilla.org/enter_bug.cgi");
+                        url.search = searchParams.toString();
+                        window.open(url.toString(), "_blank");
+                      }}
+                    >
+                      Prepare new Bugzilla bug
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("filed");
+                      }}
+                    >
+                      Mark as "filed on Bugzilla"
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td className="actions">
+                    {markInvalidMutation.isError && <p>An error occurred: {markInvalidMutation.error.message}</p>}
                     {trackReportActionMutation.isError && (
                       <p>An error occurred: {trackReportActionMutation.error.message}</p>
                     )}
 
+                    <button
+                      onClick={() => {
+                        markInvalidMutation.mutate();
+                      }}
+                    >
+                      Mark as invalid/spam
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("worksforme");
+                      }}
+                    >
+                      Mark as "worksforme"
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackReportActionMutation.mutate("duplicate");
+                      }}
+                    >
+                      Mark as "duplicate"
+                    </button>
                     <button
                       onClick={() => {
                         trackReportActionMutation.mutate("hide");
@@ -118,17 +210,10 @@ export default function UserReportContents({ index, report }: UserReportContents
                     >
                       Hide report
                     </button>
-                    <button
-                      onClick={() => {
-                        trackReportActionMutation.mutate("investigated");
-                      }}
-                    >
-                      Mark as actively investigated
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
       </td>

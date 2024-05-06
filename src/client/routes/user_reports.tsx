@@ -3,11 +3,11 @@ import { useState } from "react";
 import UserReportFrame from "../components/user_report_frame";
 
 export default function UserReports() {
-  const defaultToDate = new Date();
-  const [toDate, setToDate] = useState(DateToYMDString(defaultToDate));
-
+  // The default selected date is two days ago. We're running on processed
+  // telemetry data that could be up to 24 hours outdated, so this makes sure
+  // we're not missing reports.
   const defaultFromDate = new Date();
-  defaultFromDate.setDate(defaultToDate.getDate() - 7);
+  defaultFromDate.setDate(defaultFromDate.getDate() - 2);
   const [fromDate, setFromDate] = useState(DateToYMDString(defaultFromDate));
 
   return (
@@ -22,31 +22,21 @@ export default function UserReports() {
           }}
         >
           <div className="form-row">
-            <label htmlFor="from">Showing reports filed between</label>
+            <label htmlFor="from">Showing reports filed on</label>
             <input
               id="from"
               name="from"
               type="date"
               value={fromDate}
+              max={defaultFromDate.toISOString().split("T")[0]}
               onChange={(ev) => setFromDate(ev.target.value)}
-              required
-            />
-          </div>
-          <div className="form-row">
-            <label htmlFor="to">and</label>
-            <input
-              id="to"
-              name="to"
-              type="date"
-              value={toDate}
-              onChange={(ev) => setToDate(ev.target.value)}
               required
             />
           </div>
         </form>
       </section>
       <section>
-        <UserReportFrame from={fromDate} to={toDate} />
+        <UserReportFrame from={fromDate} to={fromDate} />
       </section>
     </>
   );

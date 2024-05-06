@@ -21,37 +21,23 @@ export default function UserReportList({ results }: ResultListProps) {
               <span className="toggler">{isExpanded ? "▼" : "▶"}</span>
               <span className="domain">{entry.root_domain}</span>
               <span>
-                ({entry.unknown_reports.length + entry.known_reports.length}{" "}
-                {Pluralize(entry.unknown_reports.length, "report", "reports")}: {entry.unknown_reports.length} unknown,{" "}
-                {entry.known_reports.length} known)
+                ({entry.reports.length} {Pluralize(entry.reports.length, "report", "reports")})
               </span>
             </div>
             {isExpanded && (
               <div className="report-container">
-                {entry.unknown_reports.length > 0 && (
-                  <>
-                    <h3>Unknown Reports</h3>
-                    <table className="report-list">
-                      <tbody>
-                        {entry.unknown_reports.map((report, index) => (
-                          <UserReportContents key={report.uuid} index={index + 1} report={report} />
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-                {entry.known_reports.length > 0 && (
-                  <>
-                    <h3>(Maybe) Known Reports</h3>
-                    <table className="report-list">
-                      <tbody>
-                        {entry.known_reports.map((report, index) => (
-                          <UserReportContents key={report.uuid} index={index + 1} report={report} />
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
+                <table className="report-list">
+                  <tbody>
+                    {entry.reports.map((report, index) => (
+                      <UserReportContents
+                        key={report.uuid}
+                        index={index + 1}
+                        rootDomain={entry.root_domain}
+                        report={report}
+                      />
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

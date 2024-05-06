@@ -1,8 +1,9 @@
-import { parentPort } from "node:worker_threads";
 import _ from "underscore";
-import psl from "psl";
 import { getBqConnection } from "../helpers/bigquery";
+import { isIP } from "node:net";
+import { parentPort } from "node:worker_threads";
 import { UrlPattern, UserReport } from "../../shared/types";
+import psl from "psl";
 import type { Logger } from "winston";
 
 export async function fetchUserReports(projectId: string, paramFrom: string, paramTo: string, logger: Logger) {
@@ -33,23 +34,26 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
             WHERE report_uuid = reports.document_id
           ) as labels,
           bp.label as prediction,
-          bp.probability as prob
+          bp.probability as prob,
+
+          # We want to exclude reports that have been actioned upon, but we do this later during processing. That's
+          # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
+          # removing already-actioned reports has to happen after sorting and grouping.
+          CASE WHEN EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
+            THEN 1 ELSE 0 END AS has_actions
         FROM moz-fx-data-shared-prod.firefox_desktop.broken_site_report as reports
         LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.document_id = bp.report_uuid
         WHERE
           reports.submission_timestamp BETWEEN TIMESTAMP(?) and TIMESTAMP(DATE_ADD(?, interval 1 day))
 
-          # Exclude reports that have a tracked action, i.e. reports hidden
-          # or reports that have been investigated
-          AND NOT EXISTS (SELECT 1 FROM webcompat_user_reports.report_actions WHERE report_actions.report_uuid = reports.document_id)
-          ORDER BY
-          CASE
-            WHEN prediction = 'valid' THEN 1
-            WHEN prediction = 'invalid' THEN 2
-            ELSE 3
-          END,
-            CASE WHEN prediction = 'valid' THEN prob END DESC,
-            CASE WHEN prediction = 'invalid' THEN prob END ASC;
+          # Only include reports that are most likely valid, as determined by our ML model
+          AND bp.label = 'valid'
+
+          # Only include reports that have a comment. All other reports are unlikely to be actionable for our QA folks
+          AND reports.metrics.text2.broken_site_report_description IS NOT NULL
+
+        ORDER BY CHAR_LENGTH(comments) DESC
+        ;
       `,
       params: [paramFrom, paramTo],
     }),
@@ -109,10 +113,14 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 
   logger.verbose("Grouping reports by root domain...");
   const normalizeHostname = _.memoize((hostname: string) => {
+    if (isIP(hostname)) {
+      return hostname;
+    }
+
     const parsedDomain = psl.parse(hostname);
     return (parsedDomain as psl.ParsedDomain).domain || "[unknown]";
   });
-  const groupedByDomain = _.groupBy(preprocessedReports, (report) => {
+  const groupedByDomainDict = _.groupBy(preprocessedReports, (report) => {
     try {
       const parsedUrl = new URL(report.url);
       return normalizeHostname(parsedUrl.hostname);
@@ -121,18 +129,17 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
     }
   });
 
-  logger.verbose("Partitioning reports into known/unknown...");
-  const partitioned = Object.entries(groupedByDomain).map(([key, value]) => {
-    const [known_reports, unknown_reports] = _.partition(value, (report) => report.related_bugs.length > 0);
+  logger.verbose("Transforming grouped Dictionary into Object");
+  const groupedByDomain = Object.entries(groupedByDomainDict).map(([root_domain, reports]) => {
     return {
-      root_domain: key,
-      known_reports,
-      unknown_reports,
+      root_domain,
+      reports_count: reports.length,
+      reports: reports.slice(0, 10),
     };
   });
 
   logger.verbose("Sorting by the total number of reports per domain...");
-  const sorted = partitioned.sort((a, b) => b.unknown_reports.length - a.unknown_reports.length);
+  const sorted = groupedByDomain.sort((a, b) => b.reports_count - a.reports_count);
 
   logger.verbose("Writing response...");
   return JSON.stringify(sorted);
@@ -149,8 +156,8 @@ if (parentPort) {
         },
       };
 
-      const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger);
-      const result = transformUserReports(rawReports, rawUrlPatterns, logger);
+      const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger as Logger);
+      const result = transformUserReports(rawReports, rawUrlPatterns, logger as Logger);
       port.postMessage({ type: "done", result });
     }
   });
