@@ -48,6 +48,8 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
 
           # Only include reports that have a comment. All other reports are unlikely to be actionable for our QA folks
           AND reports.metrics.text2.broken_site_report_description IS NOT NULL
+
+        ORDER BY CHAR_LENGTH(comments) DESC
         ;
       `,
       params: [paramFrom, paramTo],
