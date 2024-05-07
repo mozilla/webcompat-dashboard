@@ -45,13 +45,6 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
         LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.document_id = bp.report_uuid
         WHERE
           reports.submission_timestamp BETWEEN TIMESTAMP(?) and TIMESTAMP(DATE_ADD(?, interval 1 day))
-
-          # Only include reports that are most likely valid, as determined by our ML model
-          AND bp.label = 'valid'
-
-          # Only include reports that have a comment. All other reports are unlikely to be actionable for our QA folks
-          AND reports.metrics.text2.broken_site_report_description IS NOT NULL
-
         ORDER BY CHAR_LENGTH(comments) DESC
         ;
       `,
@@ -131,12 +124,20 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 
   logger.verbose("Transforming grouped Dictionary into Object");
   const groupedByDomain = Object.entries(groupedByDomainDict).map(([root_domain, reports]) => {
-    // First, slice the first 10 reports out, then remove all reprots that have
-    // been actioned upon. We do it in this order to make sure that there there
-    // won't be a new set of 10 issues after all of them have been worked on.
-    const reportSubset = reports.slice(0, 10).filter((report) => !report.has_actions);
+    const reportSubset = reports
+      // First, let's filter out all the reports we don't want to triage:
+      //   - anything labeled as invalid by our ML model
+      //   - reports without a comment
+      .filter((report) => !!report.comments && report.prediction == "valid")
+      // Then, slice the first 10 reports out, then remove all reprots that have
+      // been actioned upon. We do it in this order to make sure that there there
+      // won't be a new set of 10 issues after all of them have been worked on.
+      .slice(0, 10)
+      .filter((report) => !report.has_actions);
+
     return {
       root_domain,
+      // Note: this is the count of *all* reports, even ones we filtered out.
       reports_count: reports.length,
       reports: reportSubset,
     };
