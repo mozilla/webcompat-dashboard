@@ -193,6 +193,13 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                     </button>
                     <button
                       onClick={() => {
+                        trackReportActionMutation.mutate("not_actionable");
+                      }}
+                    >
+                      Mark as "not actionable"
+                    </button>
+                    <button
+                      onClick={() => {
                         trackReportActionMutation.mutate("worksforme");
                       }}
                     >
