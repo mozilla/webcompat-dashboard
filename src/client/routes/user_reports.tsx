@@ -1,14 +1,27 @@
 import { DateToYMDString } from "../helpers/datetime";
-import { useState } from "react";
+import { getRouteApi } from "@tanstack/react-router";
 import UserReportFrame from "../components/user_report_frame";
 
+const routeApi = getRouteApi("/user_reports");
+
 export default function UserReports() {
+  const searchParams = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+
+  const navigateToDate = (newDateString: string) => {
+    navigate({ search: { ...searchParams, from: newDateString } });
+  };
+
   // The default selected date is two days ago. We're running on processed
   // telemetry data that could be up to 24 hours outdated, so this makes sure
   // we're not missing reports.
-  const defaultFromDate = new Date();
-  defaultFromDate.setDate(defaultFromDate.getDate() - 2);
-  const [fromDate, setFromDate] = useState(DateToYMDString(defaultFromDate));
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() - 2);
+
+  if (!searchParams["from"]) {
+    navigateToDate(DateToYMDString(maxDate));
+    return;
+  }
 
   return (
     <>
@@ -27,16 +40,16 @@ export default function UserReports() {
               id="from"
               name="from"
               type="date"
-              value={fromDate}
-              max={defaultFromDate.toISOString().split("T")[0]}
-              onChange={(ev) => setFromDate(ev.target.value)}
+              value={searchParams["from"]}
+              max={DateToYMDString(maxDate)}
+              onChange={(ev) => navigateToDate(ev.target.value)}
               required
             />
           </div>
         </form>
       </section>
       <section>
-        <UserReportFrame from={fromDate} to={fromDate} />
+        <UserReportFrame from={searchParams["from"]} to={searchParams["from"]} />
       </section>
     </>
   );
