@@ -20,7 +20,14 @@ export default function UserReportFrame({ from, to }: UserReportFrameProps) {
         },
       );
 
-      return await res.json();
+      const resData = await res.json();
+      if (res.status == 200) {
+        return resData;
+      } else if (resData.error) {
+        throw new Error(resData.error);
+      } else {
+        throw new Error(`Unexpected sever-side error! status code: ${res.status}`);
+      }
     },
   });
 
@@ -29,8 +36,10 @@ export default function UserReportFrame({ from, to }: UserReportFrameProps) {
       {isLoading && <LoadingSpinner />}
       {error && (
         <div className="error-box">
+          <p>
+            <strong>Error while trying to load the data</strong>:
+          </p>
           <p>{error.message}</p>
-          <p>Are you connected to the Mozilla Corp VPN?</p>
         </div>
       )}
       {data &&
