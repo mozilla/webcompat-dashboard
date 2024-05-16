@@ -35,12 +35,18 @@ export default async function handleUserReports(logger: Logger, req: Request, re
       },
       [port1],
     );
-    const results = await new Promise((resolve) => {
+    const results = await new Promise((resolve, reject) => {
       port2.on("message", (msg) => {
-        if (msg.type == "done") {
-          resolve(msg.result);
-        } else if (msg.type == "verbose") {
-          childLogger.verbose(msg.msg);
+        switch (msg.type) {
+          case "done":
+            resolve(msg.result);
+            break;
+          case "verbose":
+            childLogger.verbose(msg.msg);
+            break;
+          case "error":
+            reject(msg.error);
+            break;
         }
       });
     });
