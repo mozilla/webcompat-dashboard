@@ -10,6 +10,8 @@ export type UserReport = {
   prediction: string;
   prob: number;
   has_actions: boolean;
+  translated_comments?: string;
+  translated_from?: string;
 };
 
 export type RelatedBug = {

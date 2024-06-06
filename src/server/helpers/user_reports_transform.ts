@@ -35,6 +35,8 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           ) as labels,
           bp.label as prediction,
           bp.probability as prob,
+          ml_trans.translated_text AS translated_comments,
+          ml_trans.language_code AS translated_from,
 
           # We want to exclude reports that have been actioned upon, but we do this later during processing. That's
           # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
@@ -43,6 +45,7 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
             THEN true ELSE false END AS has_actions
         FROM moz-fx-data-shared-prod.firefox_desktop.broken_site_report as reports
         LEFT JOIN webcompat_user_reports.bugbug_predictions AS bp ON reports.document_id = bp.report_uuid
+        LEFT JOIN webcompat_user_reports.translations AS ml_trans ON reports.document_id = ml_trans.report_uuid
         WHERE
           reports.submission_timestamp BETWEEN TIMESTAMP(?) and TIMESTAMP(DATE_ADD(?, interval 1 day))
         ORDER BY CHAR_LENGTH(comments) DESC

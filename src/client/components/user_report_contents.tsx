@@ -56,6 +56,8 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
     },
   });
 
+  const shouldShowTranslation = report.translated_comments && report.translated_from && report.translated_from != "en";
+
   return (
     <tr key={report.uuid} className={`report ${itemClassName}`} style={itemStyle}>
       <td className="index">{index}</td>
@@ -86,7 +88,17 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
               <td>Reported at</td>
               <td>{report.reported_at.toString()}</td>
             </tr>
-            {report.comments && (
+            {report.comments && shouldShowTranslation ? (
+              <tr>
+                <td>Comments</td>
+                <td>
+                  {report.translated_comments}
+                  <br />
+                  <br />
+                  <i>(text was translated from {report.translated_from})</i>
+                </td>
+              </tr>
+            ) : (
               <tr>
                 <td>Comments</td>
                 <td>{report.comments}</td>
