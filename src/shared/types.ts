@@ -12,6 +12,7 @@ export type UserReport = {
   prob: number;
   related_bugs: RelatedBug[];
   reported_at: Date;
+  tp_status?: string;
   translated_comments?: string;
   translated_from?: string;
   ua_string: string;

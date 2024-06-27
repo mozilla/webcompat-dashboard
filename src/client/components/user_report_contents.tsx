@@ -122,6 +122,10 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                 {report.app_name} {report.app_version} ({report.app_channel}) on {report.os}
               </td>
             </tr>
+            <tr>
+              <td>Tracking Protection</td>
+              <td>{report.tp_status ? report.tp_status : "disabled"}</td>
+            </tr>
             {report.related_bugs?.length > 0 && (
               <tr>
                 <td>Related bugs</td>

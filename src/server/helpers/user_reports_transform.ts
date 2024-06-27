@@ -22,6 +22,7 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           CAST(reports.submission_timestamp AS DATETIME) AS reported_at,
           reports.client_info.app_display_version AS app_version,
           reports.metrics.string.broken_site_report_breakage_category AS breakage_category,
+          reports.metrics.string.broken_site_report_tab_info_antitracking_block_list AS tp_status,
           reports.metrics.text2.broken_site_report_browser_info_app_default_useragent_string as ua_string,
           reports.metrics.text2.broken_site_report_description AS comments,
           reports.metrics.url2.broken_site_report_url AS url,
