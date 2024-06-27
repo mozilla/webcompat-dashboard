@@ -27,7 +27,8 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           reports.metrics.url2.broken_site_report_url AS url,
           reports.normalized_app_name AS app_name,
           reports.normalized_channel AS app_channel,
-          reports.normalized_os AS os,
+          reports.metadata.user_agent.os AS os,
+          reports.metadata.user_agent.version AS app_major_version,
           ARRAY(
             SELECT label
             FROM webcompat_user_reports.labels

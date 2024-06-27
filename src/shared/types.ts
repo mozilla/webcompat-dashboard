@@ -1,17 +1,22 @@
 export type UserReport = {
-  uuid: string;
-  reported_at: Date;
-  url: string;
+  app_channel: string;
+  app_major_version: string;
+  app_name: string;
+  app_version: string;
   breakage_category?: string;
   comments: string;
-  ua_string: string;
-  related_bugs: RelatedBug[];
+  has_actions: boolean;
   labels: string[];
+  os: string;
   prediction: string;
   prob: number;
-  has_actions: boolean;
+  related_bugs: RelatedBug[];
+  reported_at: Date;
   translated_comments?: string;
   translated_from?: string;
+  ua_string: string;
+  url: string;
+  uuid: string;
 };
 
 export type RelatedBug = {

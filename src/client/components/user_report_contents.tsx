@@ -2,7 +2,12 @@ import { useMutation } from "@tanstack/react-query";
 import { UserReport } from "../../shared/types";
 import { useState } from "react";
 import LoadingSpinner from "./loading_spinner";
-import { EtpStrictReportDescription, SiteReportDescription } from "../helpers/bugzilla";
+import {
+  EtpStrictReportDescription,
+  NewBugDefaultParams,
+  OpenPrefilledBugzillaBug,
+  SiteReportDescription,
+} from "../helpers/bugzilla";
 
 type UserReportContentsProps = {
   index: number;
@@ -113,7 +118,9 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
             )}
             <tr>
               <td>User Agent</td>
-              <td>{report.ua_string}</td>
+              <td>
+                {report.app_name} {report.app_version} ({report.app_channel}) on {report.os}
+              </td>
             </tr>
             {report.related_bugs?.length > 0 && (
               <tr>
@@ -164,37 +171,19 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                   <td className="actions">
                     <button
                       onClick={() => {
-                        const searchParams = new URLSearchParams([
-                          ["bug_file_loc", report.url],
-                          ["comment", SiteReportDescription(report)],
-                          ["component", "Site Reports"],
-                          ["product", "Web Compatibility"],
-                          ["short_desc", `${rootDomain} - CHANGE_ME`],
-                          ["status_whiteboard", "[webcompat-source:product]"],
-                        ]);
-
-                        const url = new URL("https://bugzilla.mozilla.org/enter_bug.cgi");
-                        url.search = searchParams.toString();
-                        window.open(url.toString(), "_blank");
+                        const searchParams = NewBugDefaultParams(report, rootDomain);
+                        searchParams.append("comment", SiteReportDescription(report));
+                        OpenPrefilledBugzillaBug(searchParams);
                       }}
                     >
                       Prepare new Site Report bug
                     </button>
                     <button
                       onClick={() => {
-                        const searchParams = new URLSearchParams([
-                          ["bug_file_loc", report.url],
-                          ["comment", EtpStrictReportDescription(report)],
-                          ["dependson", "tp-breakage"],
-                          ["component", "Site Reports"],
-                          ["product", "Web Compatibility"],
-                          ["short_desc", `${rootDomain} - CHANGE_ME`],
-                          ["status_whiteboard", "[webcompat-source:product]"],
-                        ]);
-
-                        const url = new URL("https://bugzilla.mozilla.org/enter_bug.cgi");
-                        url.search = searchParams.toString();
-                        window.open(url.toString(), "_blank");
+                        const searchParams = NewBugDefaultParams(report, rootDomain);
+                        searchParams.append("comment", EtpStrictReportDescription(report));
+                        searchParams.append("dependson", "tp-breakage");
+                        OpenPrefilledBugzillaBug(searchParams);
                       }}
                     >
                       Prepare new ETP Strict bug
