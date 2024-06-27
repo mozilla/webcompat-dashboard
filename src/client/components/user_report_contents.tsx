@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { UserReport } from "../../shared/types";
 import { useState } from "react";
 import LoadingSpinner from "./loading_spinner";
+import { EtpStrictReportDescription, SiteReportDescription } from "../helpers/bugzilla";
 
 type UserReportContentsProps = {
   index: number;
@@ -163,26 +164,9 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                   <td className="actions">
                     <button
                       onClick={() => {
-                        const comment =
-                          "**Environment:**\n" +
-                          "Operating system:\n" +
-                          "Firefox version:\n\n" +
-                          "**Preconditions:**\n" +
-                          "text\n\n" +
-                          "**Steps to reproduce:**\n" +
-                          `1. Navigate to: ${report.url}\n` +
-                          "2. Step 2\n\n" +
-                          "**Expected Behavior:**\n" +
-                          "text\n\n" +
-                          "**Actual Behavior:**\n" +
-                          "text\n\n" +
-                          "**Notes:**\n" +
-                          "text\n\n---\n\n" +
-                          `Created from webcompat-user-report:${report.uuid}`;
-
                         const searchParams = new URLSearchParams([
                           ["bug_file_loc", report.url],
-                          ["comment", comment],
+                          ["comment", SiteReportDescription(report)],
                           ["component", "Site Reports"],
                           ["product", "Web Compatibility"],
                           ["short_desc", `${rootDomain} - CHANGE_ME`],
@@ -194,7 +178,26 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                         window.open(url.toString(), "_blank");
                       }}
                     >
-                      Prepare new Bugzilla bug
+                      Prepare new Site Report bug
+                    </button>
+                    <button
+                      onClick={() => {
+                        const searchParams = new URLSearchParams([
+                          ["bug_file_loc", report.url],
+                          ["comment", EtpStrictReportDescription(report)],
+                          ["dependson", "tp-breakage"],
+                          ["component", "Site Reports"],
+                          ["product", "Web Compatibility"],
+                          ["short_desc", `${rootDomain} - CHANGE_ME`],
+                          ["status_whiteboard", "[webcompat-source:product]"],
+                        ]);
+
+                        const url = new URL("https://bugzilla.mozilla.org/enter_bug.cgi");
+                        url.search = searchParams.toString();
+                        window.open(url.toString(), "_blank");
+                      }}
+                    >
+                      Prepare new ETP Strict bug
                     </button>
                     <button
                       onClick={() => {
