@@ -28,7 +28,6 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           reports.metrics.url2.broken_site_report_url AS url,
           reports.normalized_app_name AS app_name,
           reports.normalized_channel AS app_channel,
-          reports.metadata.user_agent.os AS os,
           reports.metadata.user_agent.version AS app_major_version,
           ARRAY(
             SELECT label
@@ -39,6 +38,14 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           bp.probability as prob,
           ml_trans.translated_text AS translated_comments,
           ml_trans.language_code AS translated_from,
+
+          # If the report is from Windows, we have to use a bit of mozfun to figure out the human-readable Windows
+          # version for the build number. But this function only works on Windows pings, so we have to gate it.
+          IF (
+            client_info.windows_build_number IS NOT NULL,
+            mozfun.norm.windows_version_info('Windows_NT', client_info.os_version, client_info.windows_build_number),
+            reports.normalized_os
+          ) as os,
 
           # We want to exclude reports that have been actioned upon, but we do this later during processing. That's
           # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
