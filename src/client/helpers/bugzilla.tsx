@@ -91,7 +91,7 @@ export function EtpStrictReportDescription(report: UserReport): string {
     text
 
     **Notes:**
-    - Not reproduciblewith ETP STANDARD/turned OFF (both Normal and Private Browsing)
+    - Not reproducible with ETP STANDARD/turned OFF (both Normal and Private Browsing)
     - Reproducible on the latest Nightly
 
     ---
