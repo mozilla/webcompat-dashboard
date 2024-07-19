@@ -140,7 +140,10 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
       // First, let's filter out all the reports we don't want to triage:
       //   - anything labeled as invalid by our ML model
       //   - reports without a comment
-      .filter((report) => !!report.comments && report.prediction == "valid")
+      .filter(
+        (report) =>
+          !!report.comments && (report.prediction == "valid" || (report.prediction == "invalid" && report.prob < 0.95)),
+      )
       // Then, slice the first 10 reports out, then remove all reprots that have
       // been actioned upon. We do it in this order to make sure that there there
       // won't be a new set of 10 issues after all of them have been worked on.

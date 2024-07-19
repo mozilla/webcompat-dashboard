@@ -87,7 +87,7 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
             {isInvalid && (
               <tr>
                 <td>Prediction</td>
-                <td>This report is likely invalid</td>
+                <td>This report is likely invalid with probability {(report.prob * 100).toFixed(2) + "%"}</td>
               </tr>
             )}
             <tr>
