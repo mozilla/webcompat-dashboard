@@ -155,10 +155,25 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                         const searchParams = new URLSearchParams([
                           ["bug_file_loc_type", "allwordssubstr"],
                           ["bug_file_loc", rootDomain],
-                          ["component", "Site Reports"],
-                          ["product", "Web Compatibility"],
                           ["query_format", "advanced"],
                           ["resolution", "---"],
+                          ["j_top", "OR"],
+                          ["f1", "OP"],
+                          ["o2", "equals"],
+                          ["f2", "product"],
+                          ["v2", "Web Compatibility"],
+                          ["o3", "equals"],
+                          ["f3", "component"],
+                          ["v3", "Site Reports"],
+                          ["f4", "CP"],
+                          ["f5", "OP"],
+                          ["o6", "equals"],
+                          ["f6", "product"],
+                          ["v6", "Web Compatibility"],
+                          ["o7", "equals"],
+                          ["f7", "component"],
+                          ["v7", "Privacy: Site Reports"],
+                          ["f8", "CP"],
                         ]);
 
                         const url = new URL("https://bugzilla.mozilla.org/buglist.cgi");
@@ -176,6 +191,9 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                     <button
                       onClick={() => {
                         const searchParams = NewBugDefaultParams(report, rootDomain);
+                        searchParams.append("product", "Web Compatibility");
+                        searchParams.append("component", "Site Reports");
+
                         searchParams.append("comment", SiteReportDescription(report));
                         OpenPrefilledBugzillaBug(searchParams);
                       }}
@@ -185,6 +203,8 @@ export default function UserReportContents({ index, report, rootDomain }: UserRe
                     <button
                       onClick={() => {
                         const searchParams = NewBugDefaultParams(report, rootDomain);
+                        searchParams.append("product", "Web Compatibility");
+                        searchParams.append("component", "Privacy: Site Reports");
                         searchParams.append("comment", EtpStrictReportDescription(report));
                         searchParams.append("dependson", "tp-breakage");
                         OpenPrefilledBugzillaBug(searchParams);
