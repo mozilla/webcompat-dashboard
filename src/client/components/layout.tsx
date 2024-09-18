@@ -16,6 +16,9 @@ export default function Layout() {
               <Link to="/user_reports">User Reports</Link>
             </li>
             <li>
+              <Link to="/classified_reports">Classified Reports</Link>
+            </li>
+            <li>
               <Link to="/domain_rank">Domain Rank</Link>
             </li>
             <li>

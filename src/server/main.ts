@@ -9,9 +9,10 @@ import morgan from "morgan";
 import ViteExpress from "vite-express";
 
 import { endWithStatusAndBody } from "./helpers/http";
-import handleMarkInvalid from "./routes/mark_invalid";
+import handleAddLabel from "./routes/add_label";
 import handleTrackAction from "./routes/track_action";
 import handleUserReports from "./routes/user_reports";
+import handleClassifiedReports from "./routes/classified_reports";
 
 const app = express();
 app.use(bodyParser.json());
@@ -121,12 +122,16 @@ app.get("/api/user_reports.json", async (req, res) => {
   return await handleUserReports(logger, req, res);
 });
 
+app.get("/api/classified_reports.json", async (req, res) => {
+  return await handleClassifiedReports(logger, req, res);
+});
+
 app.post("/api/track_action.json", ensureWritePermissions, async (req, res) => {
   return await handleTrackAction(req, res);
 });
 
-app.post("/api/mark_invalid.json", ensureWritePermissions, async (req, res) => {
-  return await handleMarkInvalid(req, res);
+app.post("/api/add_label.json", ensureWritePermissions, async (req, res) => {
+  return await handleAddLabel(req, res);
 });
 
 app.get(["/app/version.json", "/__version__"], (_req, res) => {
@@ -162,7 +167,7 @@ if (process.env.NODE_ENV == "production") {
   const staticAssetRoot = path.join(__dirname, "../../dist/");
   app.use(express.static(staticAssetRoot));
 
-  app.get(["/", "/domain_rank", "/inconsistent_entries", "/user_reports"], (_req, res) => {
+  app.get(["/", "/domain_rank", "/inconsistent_entries", "/user_reports", "/classified_reports"], (_req, res) => {
     res.sendFile(path.join(staticAssetRoot, "index.html"));
   });
 } else {

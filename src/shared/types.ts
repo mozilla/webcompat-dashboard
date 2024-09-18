@@ -20,6 +20,11 @@ export type UserReport = {
   uuid: string;
 };
 
+export type ClassifiedReport = UserReport & {
+  root_domain: string;
+  action: string;
+};
+
 export type RelatedBug = {
   number: number;
   title: string;

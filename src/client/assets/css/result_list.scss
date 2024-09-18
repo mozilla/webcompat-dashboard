@@ -90,4 +90,135 @@
       }
     }
   }
+
+  .classified-report-list {
+    border-collapse: collapse;
+    margin: 1rem;
+
+    th {
+      padding: 0.6rem;
+    }
+
+    table,
+    td {
+      margin: 0;
+      padding: 0;
+    }
+
+    tr {
+      border-bottom: 1px solid #999;
+    }
+
+    tr.report {
+      &:hover {
+        background-color: #f2f2f2;
+      }
+    }
+
+    td {
+      padding: 0.3rem 0;
+      vertical-align: top;
+    }
+
+    .toggle {
+      padding: 0.3rem 1rem;
+    }
+
+    .toggle-area {
+      cursor: pointer;
+    }
+
+    .index {
+      min-width: 30px;
+      padding-right: 1rem;
+    }
+
+    .domain {
+      font-weight: bold;
+      max-width: 250px;
+      overflow: hidden;
+      padding-right: 1rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .comments {
+      padding-right: 1rem;
+      word-break: break-word;
+    }
+
+    .classified-details {
+      td {
+        min-width: 130px;
+      }
+    }
+
+    .actions {
+      button {
+        margin-right: 0.5rem;
+      }
+    }
+
+    .prediction,
+    .probability,
+    .action-buttons {
+      text-align: center;
+      padding: 0.3rem;
+    }
+
+    .prediction {
+      &.valid {
+        background: #8fbc8b;
+      }
+
+      &.inconclusive {
+        background: #ffe4c4;
+      }
+
+      &.invalid {
+        background: #df686a;
+      }
+    }
+
+    .action-buttons {
+      min-width: 60px;
+
+      button {
+        margin-right: 0.3rem;
+        padding: 0.2rem 0.4rem;
+        cursor: pointer;
+        background: #fff;
+        border-radius: 3px;
+
+        &.action-valid {
+          color: #6d9d68;
+          border: 1px solid #6d9d68;
+
+          &:hover {
+            background-color: #6d9d68;
+            color: #ffffff;
+          }
+        }
+
+        &.action-invalid {
+          color: #df686a;
+          border: 1px solid #df686a;
+
+          &:hover {
+            background-color: #df686a;
+            color: #ffffff;
+          }
+        }
+      }
+
+      .loading-spinner {
+        margin: 0;
+
+        img {
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+  }
 }
