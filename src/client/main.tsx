@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RootRoute, Route, Router, RouterProvider } from "@tanstack/react-router";
 import DomainRank from "./routes/domain_rank";
 import InconsistentEntries from "./routes/inconsistent_entries";
+import ClassifiedReports from "./routes/classified_reports";
 import Layout from "./components/layout";
 import NotFound from "./routes/not_found";
 import React from "react";
@@ -47,12 +48,19 @@ const notFoundRoute = new Route({
   component: NotFound,
 });
 
+const classifiedReportsRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: "/classified_reports",
+  component: ClassifiedReports,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   domainRankRoute,
   inconsistentEntriesRoute,
   userReportsRoute,
   notFoundRoute,
+  classifiedReportsRoute,
 ]);
 const router = new Router({ routeTree });
 
