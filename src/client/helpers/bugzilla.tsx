@@ -18,6 +18,7 @@ function trimStartAll(input: string): string {
 export function NewBugDefaultParams(report: UserReport, rootDomain: string): URLSearchParams {
   return new URLSearchParams([
     ["bug_file_loc", report.url],
+    ["keywords", "webcompat:site-report"],
     ["op_sys", `${report.os}`],
     ["rep_platform", "Desktop"],
     ["short_desc", `${rootDomain} - CHANGE_ME`],
