@@ -17,6 +17,11 @@ export async function handleReport(
 ) {
   const worker = new Worker(workerScript);
 
+  let probabilityThreshold = 0.95;
+  if (process.env.PROBABILITY_THRESHOLD) {
+    probabilityThreshold = parseFloat(process.env.PROBABILITY_THRESHOLD);
+  }
+
   try {
     // Post the request to the existing worker, and use a new MessageChannel
     // to ensure we only see our own results even if other requests are in-flight.
@@ -25,6 +30,7 @@ export async function handleReport(
       {
         type: "fetch",
         projectId: process.env.BQ_PROJECT_ID,
+        probabilityThreshold,
         ...workerParams,
         port: port1,
       },

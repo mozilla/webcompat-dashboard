@@ -51,7 +51,7 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
           # because we want to limit the workload to only the "top 10" reports, and we want to make that list stable, so
           # removing already-actioned reports has to happen after sorting and grouping.
           CASE WHEN EXISTS (
-            SELECT 1 FROM webcompat_user_reports.report_actions 
+            SELECT 1 FROM webcompat_user_reports.report_actions
             WHERE report_actions.report_uuid = reports.document_id
             AND report_actions.type != "mark-valid"
           )
@@ -82,7 +82,12 @@ export async function fetchUserReports(projectId: string, paramFrom: string, par
   };
 }
 
-export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], logger: Logger) {
+export function transformUserReports(
+  rawReports: any[],
+  rawUrlPatterns: any[],
+  probabilityThreshold: number,
+  logger: Logger,
+) {
   logger.verbose("Pre-processing URL patterns...");
   const preprocessedUrlPatterns = rawUrlPatterns.map((pattern: UrlPattern) => {
     const newPattern = Object.assign({}, pattern);
@@ -146,7 +151,8 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
       //   - reports without a comment
       .filter(
         (report) =>
-          !!report.comments && (report.prediction == "valid" || (report.prediction == "invalid" && report.prob < 0.95)),
+          !!report.comments &&
+          (report.prediction == "valid" || (report.prediction == "invalid" && report.prob < probabilityThreshold)),
       )
       // Then, slice the first 10 reports out, then remove all reprots that have
       // been actioned upon. We do it in this order to make sure that there there
@@ -172,7 +178,7 @@ export function transformUserReports(rawReports: any[], rawUrlPatterns: any[], l
 // If this module is used in a worker, set up a listener for the 'fetch' message
 // which will fetch and transform bigquery data before posting back to parent.
 if (parentPort) {
-  parentPort.on("message", async ({ type, projectId, paramFrom, paramTo, port }) => {
+  parentPort.on("message", async ({ type, projectId, probabilityThreshold, paramFrom, paramTo, port }) => {
     if (type == "fetch") {
       const logger = {
         verbose(msg: string) {
@@ -182,7 +188,7 @@ if (parentPort) {
 
       try {
         const { rawReports, rawUrlPatterns } = await fetchUserReports(projectId, paramFrom, paramTo, logger as Logger);
-        const result = transformUserReports(rawReports, rawUrlPatterns, logger as Logger);
+        const result = transformUserReports(rawReports, rawUrlPatterns, probabilityThreshold, logger as Logger);
         port.postMessage({ type: "done", result });
       } catch (error) {
         port.postMessage({ type: "error", error });
